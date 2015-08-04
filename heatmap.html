@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ENBD Heatmap</title>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" href="css/leaflet.css" />
+
+	<style>
+		#map {
+			width: 1200px;
+			height: 600px;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+
+	<script src="js/leaflet.js"></script>
+	<script src="js/leaflet-heat.js"></script>
+	<script src="js/jquery.min.js"></script> 
+	<script src="js/queue.v1.min.js"></script> 
+	<script src="js/d3.js"></script> 
+	<script type="text/javascript">
+$(document).ready(function(){
+//loading 2 files synchronously
+ queue()
+      .defer(csv, "posLoc.csv")			//contains the mapping of lat longs of locations
+      .defer(csv, "posAmt.csv")			//contains the amounts associated with the locations
+      .await(restOfCode); 
+
+
+  function csv(path, callback) {
+    d3.csv(path, function(csv) {
+      csv ? callback(null, csv) : callback("error", null);
+    });
+	}
+  
+function restOfCode(err,posData,posValues) {
+	
+var latlons=[];
+var branchMapping = {};
+
+var posMapping = [];
+
+posData.forEach(function(d){
+
+//mapping the merchant id's to the lat and longs
+
+if(d.lat != "" && d.lng != "")
+		posMapping[d["merchant_id"]]=[d.lat,d.lng];
+});
+
+var temp;
+
+posValues.forEach(function(d,i){
+
+//making the array of lat longs with the associated amount
+
+temp=posMapping[d.merchant_id];
+if(temp != undefined){
+		latlons.push(new L.LatLng(temp[0],temp[1],d.sum));	
+}
+});
+
+//initializing the map
+
+var map = new L.Map('map', {
+	center: L.latLng(25.2048493, 55.2707828),
+  zoom: 11
+});
+var OpenStreetMap_Mapnik = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0">CC-BY-SA</a>'
+  } );
+  OpenStreetMap_Mapnik.addTo(map);
+
+//adding the heatmap layer 
+
+  var heat = L.heatLayer(latlons,{
+            radius: 40,
+            blur: 80,
+			useLocalExtrema: true
+        }).addTo(map);
+
+}
+});
+</script>
+</body>
+</html>
